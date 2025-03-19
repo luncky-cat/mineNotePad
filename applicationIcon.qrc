@@ -3,5 +3,6 @@
         <file>Icon/application.png</file>
         <file>Icon/left.png</file>
         <file>Icon/rigth.png</file>
+        <file>Icon/application.ico</file>
     </qresource>
 </RCC>

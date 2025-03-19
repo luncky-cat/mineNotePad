@@ -48,7 +48,6 @@ Section "Install"
 
     #复制 Icon 文件夹（包含所有图标）
     SetOutPath "$INSTDIR\Icon"
-    ##File /r "D:\Documents\STUDY_4\build\Desktop_Qt_6_8_2_MinGW_64_bit-Release\release\Icon\*.*"
 	
     # 注册安装路径到注册表（方便卸载程序使用）
     WriteRegStr HKLM "Software\mineNotePad" "Install_Dir" "$INSTDIR"
@@ -117,10 +116,8 @@ done:
     Delete "$DESKTOP\mineNotePad.lnk"
     Delete "$SMPROGRAMS\mineNotePad\mineNotePad.lnk"
 	
-
     RMDir "$SMPROGRAMS\mineNotePad"
 	
-
     # 10. 删除注册表信息
     DeleteRegKey HKCU "Software\mineNotePad"
 
