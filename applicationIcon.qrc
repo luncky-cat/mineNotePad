@@ -4,5 +4,10 @@
         <file>Icon/left.png</file>
         <file>Icon/rigth.png</file>
         <file>Icon/application.ico</file>
+        <file>styles/style.qss</file>
+        <file>styles/titleBar.qss</file>
+        <file>Icon/close.png</file>
+        <file>Icon/max.png</file>
+        <file>Icon/min.png</file>
     </qresource>
 </RCC>

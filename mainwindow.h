@@ -38,91 +38,87 @@ public:
     ~MainWindow();
     void undoText();
 private slots:
-    void on_newWAct_triggered();
+//     void on_newWAct_triggered();
 
-    void on_openAct_triggered();
+//     void on_openAct_triggered();
 
-    void on_saveAct_triggered();
+//     void on_saveAct_triggered();
 
-    void on_saveSAct_triggered();
+//     void on_saveSAct_triggered();
 
-    void on_dateAct_triggered();
+//     void on_dateAct_triggered();
 
-    void on_delAct_triggered();
+//     void on_delAct_triggered();
 
-    void on_priAct_triggered();
+//     void on_priAct_triggered();
 
-    void on_enlargeAct_triggered();
+//     void on_enlargeAct_triggered();
 
-    void on_reduceAct_triggered();
+//     void on_reduceAct_triggered();
 
-    void on_statusBarAct_triggered(bool checked);
+//     void on_statusBarAct_triggered(bool checked);
 
-    void on_addNewButton_clicked();
+//     //void on_addNewButton_clicked();
 
-    void delTitleItem(QListWidgetItem *item);
+//     void delTitleItem(QListWidgetItem *item);
 
-    void clickedTitleItem(QListWidgetItem *item);
+//     void clickedTitleItem(QListWidgetItem *item);
 
-    void on_newAct_triggered();
+//     void on_newAct_triggered();
 
-    void cutText();
+//     void cutText();
 
-    void copyText();
+//     void copyText();
 
-    void pasteText();
+//     void pasteText();
 
-    void deleteText();
+//     void deleteText();
 
-    void selectAllText();
+//     void selectAllText();
 
-    void updateFontRateLabel();
+//     void updateFontRateLabel();
 
-    void on_closeAct_triggered();
+//     void on_closeAct_triggered();
 
-    void wheelEvent(QWheelEvent *event) override;
+//     void wheelEvent(QWheelEvent *event) override;
 
-    void updateStatusBar();
+//     void updateStatusBar();
 
-private:
-    void changeFontSize(bool increase);
+// private:
+//     void changeFontSize(bool increase);
 
-    void initResource();
+      // void initResource();
 
-    void initSignal();
+//     void initSignal();
 
-    void initCenter();
+//     void initCenter();
 
-    void initTitleBar();
+      // void initTitleBar();
 
-    void initStatusBar();
+//     void initStatusBar();
 
 private:
     Ui::MainWindow *ui;
     QMap<QString,QTextEdit*>textEditMap;//fileId-textEdit
-    QStackedWidget *editorStack; //显示的编辑框
-    QTextEdit *currentEditor;  //当前编辑器
-    QString appIcon;   //程序运行图标
-    QString leftBtnIcon;
-    QString rigthBtnIcon;
-    QPushButton *leftBtn;//左箭头
-    QPushButton *rightBtn;//右箭头
-    QLabel *titleIcon;//图标
+    QStackedWidget *editorStack; //显示的编辑框，通过这个切换
+    QTextEdit *currentEditor;  //当前的编辑器
+
+    QString appIcon;   //程序运行图标    
     QString fileId;//当前打开的文件路径
+
     QLabel * cursorPosLabel; // 位置
     QLabel * charCountLabel;     // 字符数量
     QLabel *fontRateLabel;     // 放缩率
     QLabel *formatLabel; // 文件格式
     QLabel *encodeLabel; // 编码
-    QToolButton *addNewButton;//添加按钮
-    QListWidget* titleList;   //标签项列表
-    QToolButton *minimizeButton;//最小
-    QToolButton *maximizeButton;//最大
-    QToolButton *closeButton;  //关闭
-    QWidget *titleBar;  //标题
     int defaultSize; //默认字大小
     int currentSize;//当前字大小
     QFont fontStyle;//字体
 
+    //void initObjName();
+    void initResource();
+    void initTitleBar();
+    void initCenter();
+    void initSignal();
 };
 #endif // MAINWINDOW_H
