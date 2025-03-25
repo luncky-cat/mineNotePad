@@ -1,0 +1,57 @@
+*{
+	background-color:#D4DBE4;
+}
+
+
+QPushButton{
+	height:30px;
+	width:30px;
+	icon-size:20px;
+	 padding: 0px;  
+    margin: 0px; 
+    border: none;
+}
+
+
+QToolButton{
+    iconSize: 30px;
+    font-size:18px;
+    color: #555555;
+    width:36px;
+    height:36px; 
+    padding: 0px;  
+    margin: 0px; 
+	border: none;
+    
+}
+
+QToolButton:hover {
+    background-color: #E0E0E0; 
+	outline: none;
+}
+
+QToolButton#closeBtn {
+    qproperty-icon:url(":/Icon/close.png");
+}
+
+QToolButton#minimizeBtn{
+    qproperty-icon:url(":/Icon/min.png");
+}
+
+QToolButton#maximizeBtn{
+     qproperty-icon: url(":/Icon/max.png");
+}
+
+
+QListView {
+    
+}
+QListView QPushButton {
+    border: none;
+    outline: none;
+}
+QListView QPushButton:hover {
+    background-color: #CAD3DD;
+	
+}
+
