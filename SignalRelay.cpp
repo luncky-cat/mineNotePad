@@ -11,10 +11,10 @@ SignalRelay::SignalRelay(QObject *parent)
 {
 }
 
-void SignalRelay::requestAddTab()
-{
-    emit addTabRequested();
-}
+// void SignalRelay::requestAddTab()
+// {
+//     emit addTabRequested(fileId);
+// }
 
 void SignalRelay::requestRemoveTab(int index)
 {

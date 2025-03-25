@@ -146,13 +146,13 @@ void titleBar::on_addNewBtn_clicked(QString& fileId){
     ui->titleList->addItem(item);
     ui->titleList->setItemWidget(item, itemWidget);
 
-    // connect(closeBtn,&QPushButton::clicked,this,[=](){  //关联删除槽函数
-    //     delTitleItem(item);
-    // });
+    connect(closeBtn,&QPushButton::clicked,this,[=](){  //关联删除槽函数
+        //delTitleItem(item);
+    });
 
-    // connect(titleLabel,&QPushButton::clicked,this,[=](){  //关联点击槽函数
-    //     clickedTitleItem(item);
-    // });
+    connect(titleLabel,&QPushButton::clicked,this,[=](){  //关联点击槽函数
+        //clickedTitleItem(item);
+    });
 }
 
 // void titleBar::delTitleItem(QListWidgetItem *item)

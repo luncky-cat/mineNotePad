@@ -11,8 +11,8 @@ MainWindow::MainWindow(QWidget *parent): QMainWindow(parent), ui(new Ui::MainWin
     initResource();   //初始化资源
     initTitleBar();  //初始化标题栏
     initCenter();  //初始化控件
-   // initStatusBar();//初始化状态栏
-     //initObjName();
+    initStatusBar();//初始化状态栏
+    //initObjName();
     //titleBar->setObjectName("titleBar");
 
     initSignal();   //连接信号
@@ -86,46 +86,39 @@ void MainWindow::initCenter()
 
 }
 
-// void MainWindow::initStatusBar()
-// {
-//     cursorPosLabel = new QLabel("行: 0, 列: 0", this);  // 位置
-//     charCountLabel = new QLabel("字符数: 0", this);     // 字符数量
-//     fontRateLabel = new QLabel("100%", this);     // 放缩率
-//     // formatLabel = new QLabel("Windows(CRLF)", this); // 文件格式
-//     // encodeLabel = new QLabel("编码: UTF-8", this); // 编码
-//     cursorPosLabel->setMinimumWidth(100);
-//     charCountLabel->setMinimumWidth(100);
-//     fontRateLabel->setMinimumWidth(80);
-//     //formatLabel->setMinimumWidth(100);
-//     // encodeLabel->setMinimumWidth(100);
-//     statusBar()->setStyleSheet("background-color: #F0F5F9;"); // 设置浅蓝色背景
-//     statusBar()->addWidget(cursorPosLabel);
-//     statusBar()->addWidget(charCountLabel);
-//     statusBar()->addWidget(fontRateLabel);
-//     //statusBar()->addWidget(formatLabel);
-//     //statusBar()->addWidget(encodeLabel);
-//     statusBar()->setFixedHeight(30);
-// }
+void MainWindow::initStatusBar()
+{
+    cursorPosLabel = new QLabel("行: 0, 列: 0", this);  // 位置
+    charCountLabel = new QLabel("字符数: 0", this);     // 字符数量
+    fontRateLabel = new QLabel("100%", this);     // 放缩率
+    cursorPosLabel->setMinimumWidth(100);
+    charCountLabel->setMinimumWidth(100);
+    fontRateLabel->setMinimumWidth(80);
+    statusBar()->setStyleSheet("background-color: #F0F5F9;"); // 设置浅蓝色背景
+    statusBar()->addWidget(cursorPosLabel);
+    statusBar()->addWidget(charCountLabel);
+    statusBar()->addWidget(fontRateLabel);
+    statusBar()->setFixedHeight(30);
+}
 
 
 
 void MainWindow::initSignal(){
     connect(&SignalRelay::instance(),&SignalRelay::minimizeRequested,this,&QMainWindow::showMinimized);
-    connect(&SignalRelay::instance(), &SignalRelay::maximizeRequested,this,[=](){
-        if(this->isMaximized())
-            this->showNormal();
-        else
-            this->showMaximized();
-    });
+    connect(&SignalRelay::instance(), &SignalRelay::maximizeRequested,this,&MainWindow::showMax);
     connect(&SignalRelay::instance(), &SignalRelay::closeRequested,this, &QMainWindow::close);
+    connect(ui->cutAct, &QAction::triggered, this, &MainWindow::cutText);
+    connect(ui->copyAct, &QAction::triggered, this, &MainWindow::copyText);
+    connect(ui->patseAct, &QAction::triggered, this, &MainWindow::pasteText);
+    connect(ui->delAct, &QAction::triggered, this, &MainWindow::deleteText);
+    connect(ui->selectAllAct, &QAction::triggered, this, &MainWindow::selectAllText);
+    connect(ui->revokeAct, &QAction::triggered, this, &MainWindow::undoText);
+    //connect(ui->newAct,&QAction::triggered,&SignalRelay::instance(),&SignalRelay::addTabRequested(fileId));
+}
 
 
-   // connect(ui->cutAct, &QAction::triggered, this, &MainWindow::cutText);
-   // connect(ui->copyAct, &QAction::triggered, this, &MainWindow::copyText);
-   // connect(ui->patseAct, &QAction::triggered, this, &MainWindow::pasteText);
-   // connect(ui->delAct, &QAction::triggered, this, &MainWindow::deleteText);
-   // connect(ui->selectAllAct, &QAction::triggered, this, &MainWindow::selectAllText);
-   // connect(ui->revokeAct, &QAction::triggered, this, &MainWindow::undoText);
+void MainWindow::showMax(){
+    this->isMaximized()?this->showNormal(): this->showMaximized();
 }
 
 // void MainWindow::updateStatusBar(){   //更新状态栏
@@ -139,11 +132,18 @@ void MainWindow::initSignal(){
 //     fontRateLabel->setText(QString("%1%").arg(scale));
 // }
 
-// void MainWindow::on_newWAct_triggered()
-// {
-//     QString program = QCoreApplication::applicationFilePath();  // 获取当前程序的可执行路径
-//     QProcess::startDetached(program);  // 以新进程启动
-// }
+void MainWindow::on_newWAct_triggered()
+{
+    QString program = QCoreApplication::applicationFilePath();  // 获取当前程序的可执行路径
+    QProcess::startDetached(program);  // 以新进程启动
+}
+
+
+void MainWindow::on_newAct_triggered()
+{
+    fileId.clear();
+
+}
 
 // void MainWindow::on_openAct_triggered()   //打开文件
 // {
@@ -375,44 +375,39 @@ void MainWindow::initSignal(){
 // }
 
 
-// void MainWindow::on_newAct_triggered()
-// {
-//     fileId.clear();
-//     on_addNewButton_clicked();
-// }
 
-// void MainWindow::cutText()
-// {
-//     currentEditor->cut();
-// }
+void MainWindow::cutText()
+{
+    currentEditor->cut();
+}
 
-// void MainWindow::copyText()
-// {
+void MainWindow::copyText()
+{
 
-//     QTextCursor cursor = currentEditor->textCursor();
-//     if (cursor.hasSelection()) {  // 只有选中了文本才执行复制
-//         currentEditor->copy();
-//     }
-// }
+    QTextCursor cursor = currentEditor->textCursor();
+    if (cursor.hasSelection()) {  // 只有选中了文本才执行复制
+        currentEditor->copy();
+    }
+}
 
-// void MainWindow::pasteText()
-// {
-//     currentEditor->paste();
-// }
+void MainWindow::pasteText()
+{
+    currentEditor->paste();
+}
 
-// void MainWindow::deleteText()
-// {
-//     currentEditor->textCursor().removeSelectedText();
-// }
+void MainWindow::deleteText()
+{
+    currentEditor->textCursor().removeSelectedText();
+}
 
-// void MainWindow::selectAllText()
-// {
-//     currentEditor->selectAll();
-// }
+void MainWindow::selectAllText()
+{
+    currentEditor->selectAll();
+}
 
-// void MainWindow::undoText()
-// {
-//     currentEditor->undo();
-// }
+void MainWindow::undoText()
+{
+    currentEditor->undo();
+}
 
 

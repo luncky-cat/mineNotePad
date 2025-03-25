@@ -36,67 +36,21 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
-    void undoText();
 private slots:
-//     void on_newWAct_triggered();
+    void cutText();
+    void copyText();
+    void pasteText();
+    void deleteText();
+    void selectAllText();
+    void undoText();
+    void showMax();   //最大/复原
 
-//     void on_openAct_triggered();
 
-//     void on_saveAct_triggered();
 
-//     void on_saveSAct_triggered();
 
-//     void on_dateAct_triggered();
 
-//     void on_delAct_triggered();
-
-//     void on_priAct_triggered();
-
-//     void on_enlargeAct_triggered();
-
-//     void on_reduceAct_triggered();
-
-//     void on_statusBarAct_triggered(bool checked);
-
-//     //void on_addNewButton_clicked();
-
-//     void delTitleItem(QListWidgetItem *item);
-
-//     void clickedTitleItem(QListWidgetItem *item);
-
-//     void on_newAct_triggered();
-
-//     void cutText();
-
-//     void copyText();
-
-//     void pasteText();
-
-//     void deleteText();
-
-//     void selectAllText();
-
-//     void updateFontRateLabel();
-
-//     void on_closeAct_triggered();
-
-//     void wheelEvent(QWheelEvent *event) override;
-
-//     void updateStatusBar();
-
-// private:
-//     void changeFontSize(bool increase);
-
-      // void initResource();
-
-//     void initSignal();
-
-//     void initCenter();
-
-      // void initTitleBar();
-
-//     void initStatusBar();
-
+    void on_newWAct_triggered();
+    void on_newAct_triggered();
 private:
     Ui::MainWindow *ui;
     QMap<QString,QTextEdit*>textEditMap;//fileId-textEdit
@@ -115,10 +69,10 @@ private:
     int currentSize;//当前字大小
     QFont fontStyle;//字体
 
-    //void initObjName();
     void initResource();
     void initTitleBar();
     void initCenter();
     void initSignal();
+    void initStatusBar();
 };
 #endif // MAINWINDOW_H

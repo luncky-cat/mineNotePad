@@ -12,7 +12,7 @@ public:
     static SignalRelay& instance();
 signals:
     // 定义需要转发的信号
-    void addTabRequested();             // 请求添加一个标签页
+    //void addTabRequested();             // 请求添加一个标签页
     void removeTabRequested(int index); // 请求移除指定索引的标签页
     // 根据需要添加其他信号
     void minimizeRequested();           // 请求最小化
@@ -20,7 +20,7 @@ signals:
     void closeRequested();              // 请求关闭
 public slots:
     // 定义槽函数，组件可以调用这些槽来发射信号
-    void requestAddTab();
+    //void requestAddTab(QString &fileId);
     void requestRemoveTab(int index);
     void requestMinimize();
     void requestMaximize();
