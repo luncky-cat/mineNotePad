@@ -12,14 +12,12 @@ CONFIG += c++17
 
 SOURCES += \
     SignalRelay.cpp \
-    global.cpp \
     main.cpp \
     mainwindow.cpp \
     titlebar.cpp
 
 HEADERS += \
     SignalRelay.h \
-    global.h \
     mainwindow.h \
     titlebar.h
 
