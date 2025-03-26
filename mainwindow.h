@@ -1,6 +1,8 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include "titlebar.h"
+
 #include <QMainWindow>
 #include<QProcess>
 #include <QFileDialog>
@@ -44,21 +46,27 @@ private slots:
     void selectAllText();
     void undoText();
     void showMax();   //最大/复原
-
-
-
+    //void addNewEditor();
 
 
     void on_newWAct_triggered();
     void on_newAct_triggered();
+    //void closeEditor(QListWidgetItem * item);   //关闭编辑器
+    void addNewEditor(QString &fileID);
+    void on_openAct_triggered();
+    void switchEditor(QString &fileId);
+    void oncloseEditor(QString &fileId);
 private:
     Ui::MainWindow *ui;
     QMap<QString,QTextEdit*>textEditMap;//fileId-textEdit
     QStackedWidget *editorStack; //显示的编辑框，通过这个切换
     QTextEdit *currentEditor;  //当前的编辑器
+    QTextEdit *nullptrEditor;  //当前的编辑器
 
+
+    titleBar * titleBar_;
     QString appIcon;   //程序运行图标    
-    QString fileId;//当前打开的文件路径
+    //QString fileId;//当前打开的文件路径
 
     QLabel * cursorPosLabel; // 位置
     QLabel * charCountLabel;     // 字符数量
@@ -74,5 +82,8 @@ private:
     void initCenter();
     void initSignal();
     void initStatusBar();
+    void initStyle();
+
+    void bindNewEditor();
 };
 #endif // MAINWINDOW_H
