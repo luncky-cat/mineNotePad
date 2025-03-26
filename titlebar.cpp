@@ -1,4 +1,3 @@
-#include "global.h"
 #include "SignalRelay.h"
 #include "titlebar.h"
 #include "ui_titlebar.h"
@@ -9,7 +8,7 @@
 #include <QFileInfo>
 
 void titleBar::initResource()
-{  // this->setStyleSheet("background-color: #3498db;");
+{
     titleIco = ":/Icon/application.png";
     leftBtnIco=":/Icon/left.png";
     rigthBtnIco=":/Icon/rigth.png";
@@ -29,7 +28,6 @@ titleBar::titleBar(QWidget *parent)
     initResource();
     ui->setupUi(this);
     setFixedHeight(40);
-    installEventFilter(this);
 
     ui->titleLayout->setSpacing(0);
     ui->titleLayout->setContentsMargins(0, 0, 0, 0);
@@ -85,9 +83,9 @@ void titleBar::initSignal(){
     connect(ui->minimizeBtn, &QToolButton::clicked,&SignalRelay::instance(),&SignalRelay::requestMinimize);
     connect(ui->maximizeBtn, &QToolButton::clicked,&SignalRelay::instance(),&SignalRelay::requestMaximize);
     connect(ui->closeBtn, &QToolButton::clicked,&SignalRelay::instance(), &SignalRelay::requestClose);
-
+    connect(&SignalRelay::instance(),&SignalRelay::addTabRequested,this,&titleBar::on_addNewBtn_clicked);
     connect(ui->addNewBtn, &QToolButton::clicked, this,[=]{  //添加选项卡
-            titleBar::on_addNewBtn_clicked(fileId);
+            titleBar::on_addNewBtn_clicked(SignalRelay::instance().FileId());     //添加选项卡,发送添加编辑器的请求
     });
     // 连接按钮和滚动功能
     connect(ui->leftBtn, &QPushButton::clicked, this, [=]() {
@@ -103,6 +101,10 @@ void titleBar::initSignal(){
 
 
 void titleBar::on_addNewBtn_clicked(QString& fileId){
+    QPushButton * btn=qobject_cast<QPushButton*>(sender());
+    if(btn){
+        fileId.clear();
+    }
     QWidget *itemWidget=new QWidget;
     QListWidgetItem *item = new QListWidgetItem();
     QHBoxLayout * HLayout=new QHBoxLayout;
@@ -112,104 +114,59 @@ void titleBar::on_addNewBtn_clicked(QString& fileId){
     QPushButton *closeBtn=new QPushButton();
     closeBtn->setIcon(style()->standardIcon(QStyle::SP_TitleBarCloseButton));
     closeBtn->setFixedSize(30,40);
-
     item->setSizeHint(ui->titleList->sizeHint());
     HLayout->addWidget(titleLabel);
     HLayout->addWidget(closeBtn);
-
     HLayout->setSpacing(0);  // 去除组件之间的间距
     HLayout->setContentsMargins(0, 0,0, 0); // 去除边距
     QFrame *frame = new QFrame(itemWidget);
     frame->setFrameShape(QFrame::VLine);  // 设置为竖直线
     frame->setFrameShadow(QFrame::Sunken); // 设置线的阴影效果
     HLayout->addWidget(frame);
-
-    static int untitledIndex = 1;  // 记录未保存文档索引
-    if(fileId.isEmpty()){    //无物理路径
-        fileId = QString::number(untitledIndex++);
-    }
-
-    // currentEditor=new QTextEdit(editorStack);
-    // QFont font = currentEditor->font();
-    // currentSize=font.pointSize();
-
-    // editorStack->addWidget(currentEditor);
-    // textEditMap.insert(fileId,currentEditor);
-    // editorStack->setCurrentWidget(currentEditor);
-
-    // connect(currentEditor, &QTextEdit::textChanged, this, &MainWindow::updateStatusBar);
-    // connect(currentEditor, &QTextEdit::cursorPositionChanged, this, &MainWindow::updateStatusBar);
-
+    SignalRelay::instance().FileId()=fileId.isEmpty()?SignalRelay::instance().Index():fileId;
     item->setData(Qt::UserRole,fileId);
     itemWidget->setLayout(HLayout);
     item->setSizeHint(itemWidget->sizeHint()); // 让 item 适应 widget 大小
     ui->titleList->addItem(item);
     ui->titleList->setItemWidget(item, itemWidget);
-
-    connect(closeBtn,&QPushButton::clicked,this,[=](){  //关联删除槽函数
-        //delTitleItem(item);
+    connect(closeBtn,&QPushButton::clicked,this,[=](){
+        QListWidgetItem *i=delTitleItem(item);
+        //SignalRelay::instance().requestedCloseEditor(i);   //发送请求信号
     });
 
     connect(titleLabel,&QPushButton::clicked,this,[=](){  //关联点击槽函数
-        //clickedTitleItem(item);
+        clickedTitleItem(item);
     });
+    currentItem=item;   //更新item
 }
 
-// void titleBar::delTitleItem(QListWidgetItem *item)
-// {
-//     QString delFileId=item->data(Qt::UserRole).toString();//获得当前删除的fileId
-//     QTextEdit *delEditor=textEditMap.value(delFileId,nullptr);
-//     int index = ui->titleList->row(item);  // 获取行号
-//     bool ok;
-//     //delEditor->document()->modificationChanged();
-//     if(!(delEditor->document()->isEmpty()&&delFileId.toInt(&ok))){   //删除的标签项的编辑器是空的,且路径是不存在，不询问直接关闭   //其他询问保存
-//         bool needSave=false;    //保存意愿
-//         QMessageBox::StandardButton reply;
-//         reply = QMessageBox::question(this, "保存确认","该文件尚未保存，是否保存？",
-//                                       QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel
-//                                       );
-//         if (reply == QMessageBox::Yes) {
-//             needSave=true;
-//         }else if(reply == QMessageBox::Cancel){    //取消
-//             return;
-//         }
+QListWidgetItem* titleBar::delTitleItem(QListWidgetItem *item)
+{
+    QString fileID=item->data(Qt::UserRole).toString();
+    SignalRelay::instance().requestedCloseEditor(fileID);   //请求移除这个id对应的
 
-//         if(needSave){   //愿意保存
-//             QString tempPath=fileId;
-//             fileId=delFileId;
-//             on_saveAct_triggered();
-//             fileId=tempPath;
-//         }
-//     }
+    int index = ui->titleList->row(item);  // 获取行号
 
-//     QListWidgetItem *itemToRemove = titleList->takeItem(index);
-//     delete itemToRemove;  // 删除项
+    QListWidgetItem *itemToRemove = ui->titleList->takeItem(index);
 
-//     if (titleList->count() == 0) {
-//         qDebug() << "所有 items 已删除，关闭窗口";
-//         this->close();
-//         return;  // 确保函数在此处返回，避免后续访问空指针
-//     }
+    delete itemToRemove;  // 删除项
 
-//     editorStack->removeWidget(delEditor);
-//     textEditMap.remove(delFileId);
+    QListWidgetItem *nextItem = nullptr;
+    if (index <  ui->titleList->count()) { // 优先选择后一项
+        nextItem =  ui->titleList->item(index);
+    } else if (index > 0) { // 如果没有后一项，选择前一项
+        nextItem =  ui->titleList->item(index - 1);
+    }
+    // if(nextItem==nullptr){
+    //     SignalRelay::instance().requestClose();
+    // }
+   // currentItem=nextItem;
+    return nextItem;
+}
 
-//     if(currentEditor==delEditor){   //关闭的是当前的
-//         QListWidgetItem *nextItem = nullptr;
-//         if (index < titleList->count()) { // 优先选择后一项
-//             nextItem = titleList->item(index);
-//         } else if (index > 0) { // 如果没有后一项，选择前一项
-//             nextItem = titleList->item(index - 1);
-//         }
-//         if (nextItem) {
-//             fileId = nextItem->data(Qt::UserRole).toString();
-//             editorStack->removeWidget(currentEditor);
-//             currentEditor = textEditMap.value(fileId, nullptr);
-//             if (currentEditor) {
-//                 editorStack->setCurrentWidget(currentEditor);
-//             } else {
-//                 qDebug() << "未找到对应的编辑器";
-//             }
-//         }
-//     }
-// }
+void titleBar::clickedTitleItem(QListWidgetItem *item)   //点击切换
+{
+    QString switchFileId=item->data(Qt::UserRole).toString();
+    SignalRelay::instance().FileId()=switchFileId;
+    SignalRelay::instance().requestedSwitchEditor(switchFileId);
+}
