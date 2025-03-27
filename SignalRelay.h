@@ -22,6 +22,8 @@ signals:
     void minimizeRequested();           // 请求最小化
     void maximizeRequested();           // 请求最大化
     void closeRequested();              // 请求关闭
+    void setTitleTextRequested(QString &fileId);
+     void delCurrentItemRequest(QString &fileId);
 public slots:
     // 定义槽函数，组件可以调用这些槽来发射信号
     void requestedSwitchEditor(QString &fileId);
@@ -32,9 +34,13 @@ public slots:
     void requestMinimize();
     void requestMaximize();
     void requestClose();
+    void requestSetTitleText(QString &fileId);
+    void requestDelCurrentItem(QString &fileId);
+
 public:
     QString Index();
     QString& FileId();
+    void updateFileId(QString &fileID);
 private:
     // 构造函数私有化，确保单例
     explicit SignalRelay(QObject *parent = nullptr);

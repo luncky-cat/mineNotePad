@@ -56,6 +56,13 @@ private slots:
     void on_openAct_triggered();
     void switchEditor(QString &fileId);
     void oncloseEditor(QString &fileId);
+    void on_saveAct_triggered();
+    void on_priAct_triggered();
+    void on_statusBarAct_triggered(bool checked);
+    void on_dateAct_triggered();
+ //   void on_closeAct_triggered();
+    //void on_delAct_triggered();
+    void on_closeAct_triggered();
 private:
     Ui::MainWindow *ui;
     QMap<QString,QTextEdit*>textEditMap;//fileId-textEdit

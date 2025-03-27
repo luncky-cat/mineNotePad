@@ -22,6 +22,12 @@ void SignalRelay::requestedCloseEditor(QString& fileID)
     emit closeEditorRequested(fileID);
 }
 
+void SignalRelay::updateFileId(QString& fileID)
+{
+    fileId=fileID;
+}
+
+
 SignalRelay::SignalRelay(QObject *parent)
     : QObject(parent)
 {
@@ -47,6 +53,16 @@ void SignalRelay::requestMaximize() {
 }
 void SignalRelay::requestClose()    {
     emit closeRequested();
+}
+
+void SignalRelay::requestSetTitleText(QString &fileId)
+{
+    emit setTitleTextRequested(fileId);
+}
+
+void SignalRelay::requestDelCurrentItem(QString &fileId)
+{
+    emit delCurrentItemRequest(fileId);
 }
 
 QString SignalRelay::Index()

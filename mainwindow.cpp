@@ -88,33 +88,38 @@ void MainWindow::initSignal(){
     connect(&SignalRelay::instance(),&SignalRelay::minimizeRequested,this,&QMainWindow::showMinimized);  //最小
     connect(&SignalRelay::instance(), &SignalRelay::maximizeRequested,this,&MainWindow::showMax);//最大/还原
     connect(&SignalRelay::instance(), &SignalRelay::closeRequested,this, &QMainWindow::close); //关闭
-    connect(nullptrEditor,&QTextEdit::textChanged,this,&MainWindow::bindNewEditor);   //对生成新的并进行绑定
+
+    connect(&SignalRelay::instance(),&SignalRelay::switchEditorRequested,this,&MainWindow::switchEditor);
+    connect(&SignalRelay::instance(), &SignalRelay::closeEditorRequested, this, &::MainWindow::oncloseEditor);
+
     connect(&SignalRelay::instance(),&SignalRelay::addNewEditorRequested,this,&MainWindow::addNewEditor);//新建编辑器
-    //connect(&SignalRelay::instance(),&SignalRelay::closeEditorRequested,this,&MainWindow::closeEditor); //关闭编辑器
     connect(ui->cutAct, &QAction::triggered, this, &MainWindow::cutText);
     connect(ui->copyAct, &QAction::triggered, this, &MainWindow::copyText);
     connect(ui->patseAct, &QAction::triggered, this, &MainWindow::pasteText);
     connect(ui->delAct, &QAction::triggered, this, &MainWindow::deleteText);
     connect(ui->selectAllAct, &QAction::triggered, this, &MainWindow::selectAllText);
     connect(ui->revokeAct, &QAction::triggered, this, &MainWindow::undoText);
-    //connect(ui->newAct,&QAction::triggered,&SignalRelay::instance(),&SignalRelay::requestAddTab);
-    connect(&SignalRelay::instance(), &SignalRelay::closeEditorRequested, this, &::MainWindow::oncloseEditor);
-    connect(&SignalRelay::instance(),&SignalRelay::switchEditorRequested,this,&MainWindow::switchEditor);
+
+    connect(ui->dateAct,&QAction::triggered,this,&MainWindow::on_dateAct_triggered);
+    connect(ui->priAct,&QAction::triggered,this,&MainWindow::on_priAct_triggered);
+    connect(ui->closeWAct,&QAction::triggered,this,&QMainWindow::close);
+    connect(ui->closeAct,&QAction::triggered,this,&MainWindow::on_closeAct_triggered);
+
+    connect(nullptrEditor,&QTextEdit::textChanged,this,&MainWindow::bindNewEditor);   //对生成新的并进行绑定
+
+
+
 
 }
 
-void MainWindow::switchEditor(QString& fileID){
-    qDebug()<<"cc";
-    if(fileID==SignalRelay::instance().FileId()){
-        return;
+void MainWindow::switchEditor(QString& fileId){
+    qDebug()<<"切换编辑器:"<<fileId;
+    currentEditor=nullptrEditor;  //默认设置
+    if(textEditMap.contains(fileId)){
+        currentEditor=textEditMap[fileId];
+
     }
-    bool ok;
-    if(fileID.toInt(&ok)){   //属于无路径，数字的   也无内容
-        currentEditor=nullptrEditor;
-    }else{
-        currentEditor=textEditMap[fileID];
-    }
-    editorStack->setCurrentWidget(nullptrEditor);
+    editorStack->setCurrentWidget(currentEditor);
 }
 
 
@@ -130,21 +135,21 @@ void MainWindow::initStyle()
 
 void MainWindow::bindNewEditor()
 {
-    QString fileId=SignalRelay::instance().FileId();
-    qDebug()<<"绑定新编辑器"<<fileId;
     disconnect(nullptrEditor,&QTextEdit::textChanged,this,&MainWindow::bindNewEditor);   //对生成新的并进行绑定
+    QString fileId=SignalRelay::instance().FileId();   //获得当前的FileId
+    qDebug()<<"绑定新编辑器"<<fileId;
+    qDebug()<<"组合数量:"<<textEditMap.size();
+    qDebug()<<"容器大小:"<<editorStack->count();
     QTextEdit* newEditor=new QTextEdit(editorStack);
+    qDebug()<<nullptrEditor->toPlainText();
     newEditor->setText(nullptrEditor->toPlainText()+fileId);  //复制文本
     currentEditor=newEditor;
     editorStack->addWidget(currentEditor);
     editorStack->setCurrentWidget(currentEditor);
     nullptrEditor->clear();
     textEditMap.insert(fileId,currentEditor);
-    qDebug()<<"组合大小:"<<textEditMap.size();
-    qDebug()<<"容器大小:"<<editorStack->count();
-    connect(nullptrEditor,&QTextEdit::textChanged,this,&MainWindow::bindNewEditor);   //对生成新的并进行绑定
+    connect(nullptrEditor,&QTextEdit::textChanged,this,&MainWindow::bindNewEditor);   //重新绑定
 }
-
 
 void MainWindow::showMax(){
     this->isMaximized()?this->showNormal(): this->showMaximized();
@@ -152,18 +157,20 @@ void MainWindow::showMax(){
 
 void MainWindow::addNewEditor(QString &fileID)    //
 {
+    qDebug()<<"addNewEditor新建编辑器？:"<<fileID;
+    currentEditor=nullptrEditor;
     bool ok;
-    qDebug()<<"addneweditor:"<<fileID;
     if(fileID.toInt(&ok)){    //空的为新建按钮点击
-        currentEditor=nullptrEditor;
         editorStack->setCurrentWidget(currentEditor);
+        qDebug()<<"传入数字:设置默认";
         return;
     }
-
     if(textEditMap.contains(fileID)){   //已经打开
         currentEditor = textEditMap[fileID];
         editorStack->setCurrentWidget(currentEditor);
         SignalRelay::instance().FileId()=fileID;   //更新记录
+        qDebug()<<"已经存在 切换";
+        //更新title
         return;
     }
 
@@ -187,7 +194,7 @@ void MainWindow::addNewEditor(QString &fileID)    //
 
     editorStack->addWidget(currentEditor);
     editorStack->setCurrentWidget(currentEditor); //显示当前对应
-    textEditMap.insert(SignalRelay::instance().FileId(),currentEditor);
+    textEditMap.insert(fileID,currentEditor);  //插入新组合
 }
 
 
@@ -226,64 +233,114 @@ void MainWindow::on_openAct_triggered()   //打开文件
 }
 
 
-// void MainWindow::on_saveAct_triggered()
-// {
-//     QTextEdit *saveTextEditor=textEditMap[fileId];
-//     bool ok;
-//     if(fileId.toInt(&ok)){  //保存文件路径不存在
-//         QString filePath = QFileDialog::getSaveFileName(
-//             nullptr, "保存文件", "新建文档.txt", "文本文档(*.txt);;所有文件(*.)"
-//             );
+void MainWindow::on_saveAct_triggered()
+{
+    QString fileId=SignalRelay::instance().FileId();
+    bool ok;
+    if(fileId.toInt(&ok)){  //保存文件路径不存在
+        QString filePath = QFileDialog::getSaveFileName(
+            nullptr, "保存文件", "新建文档.txt", "文本文档(*.txt);;所有文件(*.)"
+            );
 
-//         if (filePath.isEmpty()) {
-//             return;
-//         }
+        qDebug()<<"filepath:"<<filePath;
+        textEditMap.remove(fileId);//删除旧组合
+        SignalRelay::instance().requestSetTitleText(filePath);  //更新title
+        SignalRelay::instance().FileId()=filePath;  //更新文本id
+        fileId=filePath;
+        textEditMap.insert(filePath,currentEditor);   //新组合
+        //currentEditor
+    }
 
-//         //更新title   根据之前的fileid寻找item
-//         // QListWidgetItem *item=nullptr;
-//         // for (int i = 0; i < titleList->count(); ++i) {
-//         //     item = titleList->item(i);
-//         //     if (item->data(Qt::UserRole).toString() == fileId) {
-//         //         QWidget *itemWidget = titleList->itemWidget(item);
-//         //         item->setData(Qt::UserRole,filePath);//更新文件id
-//         //         if (itemWidget) {
-//         //             QPushButton *titleLabel = itemWidget->findChild<QPushButton*>();
-//         //             titleLabel->setText(QFileInfo(filePath).fileName()); // 更新文本
-//         //         }
-//         //     }
-//         // }
+    QSaveFile file(fileId);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QMessageBox::critical(this, "文件打开失败", "无法打开文件：" + file.errorString());
+        return;
+    }
+    //写入数据
+    qDebug()<<"写入到:"<<fileId;
+    QTextStream out(&file);
+    out<<currentEditor->toPlainText();
+    if (!file.commit()) {
+        QMessageBox::critical(this, "文件保存失败", "无法保存文件：" + file.errorString());
+    }
+}
 
-//         textEditMap.remove(fileId);//删除旧组合
-//         fileId=filePath;  //更新文本id
-//         textEditMap.insert(fileId,saveTextEditor);   //新组合
-//     }
 
-//     QSaveFile file(fileId);
-//     if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-//         QMessageBox::critical(this, "文件打开失败", "无法打开文件：" + file.errorString());
-//         return;
-//     }
-//     //写入数据
-//     QTextStream out(&file);
-//     out<<saveTextEditor->toPlainText();
-//     if (!file.commit()) {
-//         QMessageBox::critical(this, "文件保存失败", "无法保存文件：" + file.errorString());
-//     }
-// }
+void MainWindow::oncloseEditor(QString &fileId){
+    if(textEditMap.contains(fileId)){    //存在
+        qDebug()<<"关闭对应的:"<<fileId;
+        bool needSave=false;    //保存意愿
+        QMessageBox::StandardButton reply;
+        reply = QMessageBox::question(this, "保存确认","该文件尚未保存，是否保存？",QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
+        if (reply == QMessageBox::Yes) {
+            needSave=true;
+        }else if(reply == QMessageBox::Cancel){    //取消
+            return;
+        }
+        if(needSave){   //愿意保存
+            //切换到在保存
+            switchEditor(fileId);  //切换编辑器
+            on_saveAct_triggered();
+        }
+        editorStack->removeWidget(textEditMap.value(fileId,nullptr));   //移出容器
+        textEditMap.remove(fileId);  //移除组合
 
-// void MainWindow::on_closeAct_triggered(){
-//     QListWidgetItem* item=nullptr;
-//     // for (int i = 0; i < titleList->count(); ++i) {
-//     //     item = titleList->item(i);
-//     //     if (item->data(Qt::UserRole).toString() == fileId) {
-//     //         delTitleItem(item);
-//     //     }
-//     // }
-// }
+
+    }
+}
+
+void MainWindow::cutText()
+{
+    currentEditor->cut();
+}
+
+void MainWindow::copyText()
+{
+
+    QTextCursor cursor = currentEditor->textCursor();
+    if (cursor.hasSelection()) {  // 只有选中了文本才执行复制
+        currentEditor->copy();
+    }
+}
+
+void MainWindow::pasteText()
+{
+    currentEditor->paste();
+}
+
+void MainWindow::deleteText()
+{
+    currentEditor->textCursor().removeSelectedText();
+}
+
+void MainWindow::selectAllText()
+{
+    currentEditor->selectAll();
+}
+
+void MainWindow::undoText()
+{
+    currentEditor->undo();
+}
+
+
+void MainWindow::on_closeAct_triggered(){
+    qDebug()<<"关闭选项卡";
+    QString id;
+    id.clear();
+    //SignalRelay::instance().requestDelCurrentItem();
+    if(currentEditor==nullptrEditor){   //编辑器不是默认
+        qDebug()<<"当前默认编辑器:";
+        //仅删除项目，无关联
+    }else{
+        id=textEditMap.key(currentEditor,"nullptr");
+        qDebug()<<"当前编辑器的对应id:"<<id;    //删除项目且有管理
+    }
+    SignalRelay::instance().requestDelCurrentItem(id);
+}
 
 // void MainWindow::on_saveSAct_triggered()
 // {
-//     //QTextEdit *saveTextEditor=textEditMap[fileId];
 //     QString filePath = QFileDialog::getSaveFileName(
 //         nullptr, "保存文件", "新建文档.txt", "文本文档(*.txt);;所有文件(*.)"
 //         );
@@ -300,36 +357,27 @@ void MainWindow::on_openAct_triggered()   //打开文件
 
 //     //写入数据
 //     QTextStream out(&file);
-//     //out<<saveTextEditor->toPlainText();
+//     out<<currentEditor->toPlainText();
 //     if (!file.commit()) {
 //         QMessageBox::critical(this, "文件保存失败", "无法保存文件：" + file.errorString());
 //     }
 // }
 
-// void MainWindow::on_dateAct_triggered()
-// {
-//     QDateTime time = QDateTime::currentDateTime();  // 获取当前时间
-//     currentEditor->insertPlainText(time.toString("yyyy-MM-dd HH:mm"));
-// }
 
+void MainWindow::on_priAct_triggered()
+{
+    QPrinter printer;
+    QPrintDialog dialog(&printer,currentEditor);
+    if (dialog.exec() == QDialog::Accepted) {
+        currentEditor->print(&printer);
+    }
+}
 
-// void MainWindow::on_delAct_triggered()
-// {
-//     QTextCursor cursor = currentEditor->textCursor();
-//     if (cursor.hasSelection()) {
-//         cursor.removeSelectedText();  // 仅删除选中内容
-//     }
-// }
-
-// void MainWindow::on_priAct_triggered()
-// {
-//     QPrinter printer;
-//     QPrintDialog dialog(&printer,currentEditor);
-//     if (dialog.exec() == QDialog::Accepted) {
-//         currentEditor->print(&printer);
-//     }
-// }
-
+void MainWindow::on_dateAct_triggered()
+{
+    QDateTime time = QDateTime::currentDateTime();  // 获取当前时间
+    currentEditor->insertPlainText(time.toString("yyyy-MM-dd HH:mm"));
+}
 
 // void MainWindow::on_enlargeAct_triggered()
 // {
@@ -388,75 +436,8 @@ void MainWindow::on_openAct_triggered()   //打开文件
 //     updateFontRateLabel();  // 更新放缩率
 // }
 
-// void MainWindow::on_statusBarAct_triggered(bool checked)
-// {
-//     statusBar()->setVisible(checked);  // 显示或隐藏状态栏
-// }
-
-
-
-
-
-// void MainWindow::clickedTitleItem(QListWidgetItem *item)
-// {
-//     fileId= item->data(Qt::UserRole).toString();//获得
-//     currentEditor=textEditMap[fileId];
-//     editorStack->setCurrentWidget(currentEditor); //切
-//     // 更新状态栏
-//     updateStatusBar();
-
-// }
-
-void MainWindow::oncloseEditor(QString & fileId){
-    if(textEditMap.contains(fileId)){    //存在
-        bool needSave=false;    //保存意愿
-        QMessageBox::StandardButton reply;
-        reply = QMessageBox::question(this, "保存确认","该文件尚未保存，是否保存？",QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
-        if (reply == QMessageBox::Yes) {
-            needSave=true;
-        }else if(reply == QMessageBox::Cancel){    //取消
-            return;
-        }
-        if(needSave){   //愿意保存
-            //on_saveSAct_triggered();
-        }
-        editorStack->removeWidget(textEditMap.value(fileId,nullptr));   //移出容器
-        textEditMap.remove(fileId);  //移除组合
-    }
-}
-
-void MainWindow::cutText()
+void MainWindow::on_statusBarAct_triggered(bool checked)
 {
-    currentEditor->cut();
+    statusBar()->setVisible(checked);  // 显示或隐藏状态栏
 }
-
-void MainWindow::copyText()
-{
-
-    QTextCursor cursor = currentEditor->textCursor();
-    if (cursor.hasSelection()) {  // 只有选中了文本才执行复制
-        currentEditor->copy();
-    }
-}
-
-void MainWindow::pasteText()
-{
-    currentEditor->paste();
-}
-
-void MainWindow::deleteText()
-{
-    currentEditor->textCursor().removeSelectedText();
-}
-
-void MainWindow::selectAllText()
-{
-    currentEditor->selectAll();
-}
-
-void MainWindow::undoText()
-{
-    currentEditor->undo();
-}
-
 

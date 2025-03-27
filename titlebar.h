@@ -25,9 +25,13 @@ private:
     QListWidgetItem *currentItem;//记录当前的项目
     void initSignal();
     void initResource();
+    void initContents();
+
 private slots:
     QListWidgetItem* delTitleItem(QListWidgetItem *item);
     void clickedTitleItem(QListWidgetItem *item);
+    void setTitleText(QString &fileId);
+    void delCurrentItem(QString &fileId);
 };
 
 #endif // TITLEBAR_H

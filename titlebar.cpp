@@ -6,12 +6,14 @@
 #include<QFile>
 #include<QListWidgetItem>
 #include <QFileInfo>
+#include<QListWidget>
 
 void titleBar::initResource()
 {
     titleIco = ":/Icon/application.png";
     leftBtnIco=":/Icon/left.png";
     rigthBtnIco=":/Icon/rigth.png";
+    currentItem=nullptr;
     QFile file(":/styles/titleBar.qss"); // QSS文件路径
     if (file.open(QFile::ReadOnly)) {
         QString styleSheet = QLatin1String(file.readAll());
@@ -20,13 +22,7 @@ void titleBar::initResource()
     }
 }
 
-
-titleBar::titleBar(QWidget *parent)
-    : QWidget(parent)
-    , ui(new Ui::titleBar)
-{
-    initResource();
-    ui->setupUi(this);
+void titleBar::initContents(){
     setFixedHeight(40);
 
     ui->titleLayout->setSpacing(0);
@@ -36,13 +32,13 @@ titleBar::titleBar(QWidget *parent)
     ui->titleIcon->setPixmap(QPixmap(titleIco).scaled(30,30, Qt::KeepAspectRatio, Qt::SmoothTransformation));
 
     // 添加标题栏列表
-     ui->titleList->setViewMode(QListView::IconMode);
-     ui->titleList->setFlow(QListView::LeftToRight);
-     ui->titleList->setResizeMode(QListView::Adjust);
-     ui->titleList->setWrapping(false);  // 禁用换行，确保项目不会换行
-     ui->titleList->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-     ui->titleList->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-     ui->titleList->setFrameShape(QFrame::NoFrame); //无边
+    ui->titleList->setViewMode(QListView::IconMode);
+    ui->titleList->setFlow(QListView::LeftToRight);
+    ui->titleList->setResizeMode(QListView::Adjust);
+    ui->titleList->setWrapping(false);  // 禁用换行，确保项目不会换行
+    ui->titleList->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    ui->titleList->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    ui->titleList->setFrameShape(QFrame::NoFrame); //无边
 
     // 加载图像并调整大小
     QPixmap leftPixMap(leftBtnIco);
@@ -71,6 +67,17 @@ titleBar::titleBar(QWidget *parent)
     ui->titleLayout->setSpacing(0);
     setContentsMargins(0, 0, 0, 0);
     ui->titleLayout->setContentsMargins(0, 0, 0, 0);
+}
+
+
+titleBar::titleBar(QWidget *parent)
+    : QWidget(parent)
+    , ui(new Ui::titleBar)
+{
+
+    ui->setupUi(this);
+    initResource();
+    initContents();
     initSignal();
 }
 
@@ -84,6 +91,7 @@ void titleBar::initSignal(){
     connect(ui->maximizeBtn, &QToolButton::clicked,&SignalRelay::instance(),&SignalRelay::requestMaximize);
     connect(ui->closeBtn, &QToolButton::clicked,&SignalRelay::instance(), &SignalRelay::requestClose);
     connect(&SignalRelay::instance(),&SignalRelay::addTabRequested,this,&titleBar::on_addNewBtn_clicked);
+    connect(&SignalRelay::instance(),&SignalRelay::delCurrentItemRequest,this,&titleBar::delCurrentItem);
     connect(ui->addNewBtn, &QToolButton::clicked, this,[=]{  //添加选项卡
             titleBar::on_addNewBtn_clicked(SignalRelay::instance().FileId());     //添加选项卡,发送添加编辑器的请求
     });
@@ -97,6 +105,7 @@ void titleBar::initSignal(){
         int step = 100;
         ui->titleList->horizontalScrollBar()->setValue(ui->titleList->horizontalScrollBar()->value() + step);
     });
+    connect(&SignalRelay::instance(),&SignalRelay::setTitleTextRequested,this,&titleBar::setTitleText);
 }
 
 
@@ -130,23 +139,27 @@ void titleBar::on_addNewBtn_clicked(QString& fileId){
     ui->titleList->addItem(item);
     ui->titleList->setItemWidget(item, itemWidget);
     connect(closeBtn,&QPushButton::clicked,this,[=](){
+        clickedTitleItem(item);
         QListWidgetItem *i=delTitleItem(item);
-        //SignalRelay::instance().requestedCloseEditor(i);   //发送请求信号
+        if(!i){
+            clickedTitleItem(i);   //切换下一个
+            QString file=i->data(Qt::UserRole).toString();
+            SignalRelay::instance().requestedSwitchEditor(file);  //切换下一个编辑器
+        }
     });
 
     connect(titleLabel,&QPushButton::clicked,this,[=](){  //关联点击槽函数
         clickedTitleItem(item);
     });
     currentItem=item;   //更新item
+    clickedTitleItem(item);
 }
 
 QListWidgetItem* titleBar::delTitleItem(QListWidgetItem *item)
 {
     QString fileID=item->data(Qt::UserRole).toString();
     SignalRelay::instance().requestedCloseEditor(fileID);   //请求移除这个id对应的
-
     int index = ui->titleList->row(item);  // 获取行号
-
     QListWidgetItem *itemToRemove = ui->titleList->takeItem(index);
 
     delete itemToRemove;  // 删除项
@@ -157,16 +170,46 @@ QListWidgetItem* titleBar::delTitleItem(QListWidgetItem *item)
     } else if (index > 0) { // 如果没有后一项，选择前一项
         nextItem =  ui->titleList->item(index - 1);
     }
-    // if(nextItem==nullptr){
-    //     SignalRelay::instance().requestClose();
-    // }
-   // currentItem=nextItem;
+    if(nextItem==nullptr){
+        SignalRelay::instance().requestClose();
+    }
+    currentItem=nextItem;
     return nextItem;
 }
 
 void titleBar::clickedTitleItem(QListWidgetItem *item)   //点击切换
 {
+    currentItem=item;
     QString switchFileId=item->data(Qt::UserRole).toString();
-    SignalRelay::instance().FileId()=switchFileId;
+    SignalRelay::instance().updateFileId(switchFileId);
     SignalRelay::instance().requestedSwitchEditor(switchFileId);
+}
+
+
+void titleBar::setTitleText(QString &fileId){   //更新title
+    qDebug()<<"item:"<<fileId;
+    currentItem->data(Qt::UserRole).toString().clear();
+    currentItem->setData(Qt::UserRole,fileId);
+    QWidget *widget =ui->titleList->itemWidget(currentItem);
+    if (widget) {
+        QList<QPushButton *> buttons = widget->findChildren<QPushButton *>();
+        buttons[0]->setText(QFileInfo(fileId).fileName());
+    }
+}
+
+void titleBar::delCurrentItem(QString &fileId)
+{
+    QListWidgetItem* i=delTitleItem(currentItem);
+    if(!i){
+        clickedTitleItem(i);   //切换下一个
+        QString file=i->data(Qt::UserRole).toString();
+        SignalRelay::instance().requestedSwitchEditor(file);  //切换下一个编辑器
+    }
+    // for (int i = 0; i <ui->titleList->count(); ++i) {   //可以删除有关联的
+    //     QListWidgetItem *item = ui->titleList->item(i);
+    //     if (item && item->data(Qt::UserRole).toString() == fileId) {
+    //         delTitleItem(item); // 删除 item 并释放内存
+    //         break; // 找到并删除后退出循环
+    //     }
+    // }
 }
