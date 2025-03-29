@@ -9,5 +9,7 @@
         <file>Icon/close.png</file>
         <file>Icon/max.png</file>
         <file>Icon/min.png</file>
+        <file>Icon/add.png</file>
+        <file>styles/topresizearea.qss</file>
     </qresource>
 </RCC>

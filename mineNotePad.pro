@@ -14,12 +14,14 @@ SOURCES += \
     SignalRelay.cpp \
     main.cpp \
     mainwindow.cpp \
-    titlebar.cpp
+    titlebar.cpp \
+    topresizearea.cpp
 
 HEADERS += \
     SignalRelay.h \
     mainwindow.h \
-    titlebar.h
+    titlebar.h \
+    topresizearea.h
 
 FORMS += \
     mainwindow.ui \
