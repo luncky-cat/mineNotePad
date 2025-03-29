@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include "titlebar.h"
+#include "topresizearea.h"
 
 #include <QMainWindow>
 #include<QProcess>
@@ -24,6 +25,7 @@
 #include <QStackedWidget>
 #include<QFont>
 #include <QScrollBar>
+#include <QTimer>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -38,6 +40,10 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+protected:
+    void mousePressEvent(QMouseEvent *event) override;
+    void mouseMoveEvent(QMouseEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *event) override;
 private slots:
     void cutText();
     void copyText();
@@ -46,30 +52,31 @@ private slots:
     void selectAllText();
     void undoText();
     void showMax();   //最大/复原
-    //void addNewEditor();
-
-
     void on_newWAct_triggered();
     void on_newAct_triggered();
-    //void closeEditor(QListWidgetItem * item);   //关闭编辑器
-    void addNewEditor(QString &fileID);
+    bool addNewEditor();
     void on_openAct_triggered();
-    void switchEditor(QString &fileId);
-    void oncloseEditor(QString &fileId);
+    void switchEditor();
+    void oncloseEditor();
     void on_saveAct_triggered();
     void on_priAct_triggered();
     void on_statusBarAct_triggered(bool checked);
     void on_dateAct_triggered();
- //   void on_closeAct_triggered();
-    //void on_delAct_triggered();
     void on_closeAct_triggered();
+    void on_saveSAct_triggered();
+    void updateStatusBar();   //状态栏防抖
+    void performUpdateStatusBar();   //实际执行函数
+    void updateCursorStatus();
+    void updateTextStats();
 private:
     Ui::MainWindow *ui;
-    QMap<QString,QTextEdit*>textEditMap;//fileId-textEdit
+    //QMap<QString,QTextEdit*>textEditMap;
+    QMap<QString,QPair<QTextEdit*,bool>> textEditMap;//fileId-textEdit
     QStackedWidget *editorStack; //显示的编辑框，通过这个切换
     QTextEdit *currentEditor;  //当前的编辑器
     QTextEdit *nullptrEditor;  //当前的编辑器
-
+    QSharedPointer<QString>fileId;
+    QPoint m_dragPosition;
 
     titleBar * titleBar_;
     QString appIcon;   //程序运行图标    
@@ -92,5 +99,29 @@ private:
     void initStyle();
 
     void bindNewEditor();
+
+    TopResizeArea* resizeArea;
+
+
+    enum ResizeRegion {
+        None,
+        Left,
+        Right,
+        Top,
+        Bottom,
+        TopLeft,
+        TopRight,
+        BottomLeft,
+        BottomRight
+    };
+    ResizeRegion m_resizeRegion = None;
+    bool m_resizing = false;
+    QPoint m_dragPos;
+    int m_borderWidth = 10; // 定义边缘检测宽度
+    ResizeRegion detectResizeRegion(const QPoint &pos);
+
+    QTimer* statusBarTimer;        // 防抖定时器
+
+
 };
 #endif // MAINWINDOW_H
