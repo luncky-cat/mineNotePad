@@ -1,33 +1,38 @@
 *{
-	background-color:#D4DBE4;
+     background-color:#D4DBE4;
+     min-height:40px;
+     max-height:40px;
 }
 
 
 QPushButton{
-	height:30px;
-	width:30px;
-	icon-size:20px;
-	 padding: 0px;  
+        width:30px;
+        icon-size:16px;
+         padding: 0px;
+    margin: 0px;
+	  border: none;  
+    border-radius: 1px;
+}
+
+QPushButton:hover{
+ background-color: #E0E0E0; 
+    outline: none;
+}
+
+QToolButton{
+    icon-size:25px;
+    font-size:18px;
+    color: #555555;
+    width:36px;
+    padding: 0px;  
     margin: 0px; 
     border: none;
 }
 
 
-QToolButton{
-    iconSize: 30px;
-    font-size:18px;
-    color: #555555;
-    width:36px;
-    height:36px; 
-    padding: 0px;  
-    margin: 0px; 
-	border: none;
-    
-}
-
 QToolButton:hover {
     background-color: #E0E0E0; 
-	outline: none;
+    outline: none;
 }
 
 QToolButton#closeBtn {
@@ -43,15 +48,14 @@ QToolButton#maximizeBtn{
 }
 
 
-QListView {
-    
-}
-QListView QPushButton {
+QListWidget QPushButton {
     border: none;
     outline: none;
 }
-QListView QPushButton:hover {
+
+
+QListWidget QPushButton:hover {
     background-color: #CAD3DD;
-	
 }
+
 
