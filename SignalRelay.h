@@ -13,41 +13,36 @@ public:
     static SignalRelay& instance();
 signals:
     // 定义需要转发的信号
-    void addTabRequested(QString &fileId);             // 请求添加一个标签页
-    void switchEditorRequested(QString &fileId);
-    void addNewEditorRequested(QString &fileId);   //请求添加新的编辑器
-    void closeEditorRequested(QString &fileId);
-
+    void addTabRequested();             // 请求添加一个标签页
+    void switchEditorRequested();
+    void addNewEditorRequested();   //请求添加新的编辑器
+    void closeEditorRequested();
     void removeTabRequested(int index); // 请求移除指定索引的标签页
     void minimizeRequested();           // 请求最小化
     void maximizeRequested();           // 请求最大化
     void closeRequested();              // 请求关闭
     void setTitleTextRequested(QString &fileId);
-     void delCurrentItemRequest(QString &fileId);
+     void delCurrentItemRequest();
+
+signals:
+    void topResizeRequested(const QPoint &globalPos);   //调整检测
 public slots:
     // 定义槽函数，组件可以调用这些槽来发射信号
-    void requestedSwitchEditor(QString &fileId);
-    void requestedAddNewEditor(QString &fileId);
-    void requestedCloseEditor(QString &fileID);
-    void requestAddTab(QString &fileId);
+    void requestedSwitchEditor();
+    void requestedAddNewEditor();
+    void requestedCloseEditor();
+    void requestAddTab();
     void requestRemoveTab(int index);
     void requestMinimize();
     void requestMaximize();
     void requestClose();
     void requestSetTitleText(QString &fileId);
-    void requestDelCurrentItem(QString &fileId);
-
-public:
-    QString Index();
-    QString& FileId();
-    void updateFileId(QString &fileID);
+    void requestDelCurrentItem();
+    void requestedTopResize(const QPoint &globalPos);
 private:
     // 构造函数私有化，确保单例
     explicit SignalRelay(QObject *parent = nullptr);
-
     Q_DISABLE_COPY(SignalRelay)
-    QString fileId; //当前文件的id
-    int index;   //未保存的 分配数字id
 };
 
 

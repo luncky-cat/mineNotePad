@@ -6,38 +6,31 @@ SignalRelay& SignalRelay::instance()
     return instance;
 }
 
-void SignalRelay::requestedSwitchEditor(QString &fileId)
+void SignalRelay::requestedSwitchEditor()
 {
-    emit switchEditorRequested(fileId);
+    emit switchEditorRequested();
 
 }
 
-void SignalRelay::requestedAddNewEditor(QString &fileId)
+void SignalRelay::requestedAddNewEditor()
 {
-    emit addNewEditorRequested(fileId);
+    emit addNewEditorRequested();
 }
 
-void SignalRelay::requestedCloseEditor(QString& fileID)
+void SignalRelay::requestedCloseEditor()
 {
-    emit closeEditorRequested(fileID);
+    emit closeEditorRequested();
 }
-
-void SignalRelay::updateFileId(QString& fileID)
-{
-    fileId=fileID;
-}
-
 
 SignalRelay::SignalRelay(QObject *parent)
     : QObject(parent)
 {
-    index=1;
-    fileId.clear();
+
 }
 
-void SignalRelay::requestAddTab(QString &fileId)
+void SignalRelay::requestAddTab()
 {
-    emit addTabRequested(fileId);
+    emit addTabRequested();
 }
 
 void SignalRelay::requestRemoveTab(int index)
@@ -60,17 +53,13 @@ void SignalRelay::requestSetTitleText(QString &fileId)
     emit setTitleTextRequested(fileId);
 }
 
-void SignalRelay::requestDelCurrentItem(QString &fileId)
+void SignalRelay::requestDelCurrentItem()
 {
-    emit delCurrentItemRequest(fileId);
+    emit delCurrentItemRequest();
 }
 
-QString SignalRelay::Index()
+void SignalRelay::requestedTopResize(const QPoint &globalPos)
 {
-    return QString::number(index++);
+    emit topResizeRequested(globalPos);
 }
 
-QString& SignalRelay::FileId()
-{
-    return fileId;
-}
