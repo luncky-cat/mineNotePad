@@ -74,14 +74,14 @@ private:
     QMap<QString,QPair<QTextEdit*,bool>> textEditMap;//fileId-textEdit
     QStackedWidget *editorStack; //显示的编辑框，通过这个切换
     QTextEdit *currentEditor;  //当前的编辑器
-    QTextEdit *nullptrEditor;  //当前的编辑器
+    QTextEdit *defaultEditor;  //当前的编辑器
     QSharedPointer<QString>fileId;
     QPoint m_dragPosition;
 
     titleBar * titleBar_;
     QString appIcon;   //程序运行图标    
     //QString fileId;//当前打开的文件路径
-
+    QTextEdit* newEditor;
     QLabel * cursorPosLabel; // 位置
     QLabel * charCountLabel;     // 字符数量
     QLabel *fontRateLabel;     // 放缩率
