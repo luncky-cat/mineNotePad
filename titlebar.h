@@ -16,35 +16,36 @@ class titleBar : public QWidget
 public:
     explicit titleBar(QWidget *parent = nullptr);
     ~titleBar();
-    QSharedPointer<QString>fileId;   //当前文件id
-private:
-    void on_addNewBtn_clicked();
+
 protected:
     void mousePressEvent(QMouseEvent *event) override;
 
     void mouseMoveEvent(QMouseEvent *event) override;
 
     void mouseDoubleClickEvent(QMouseEvent *event) override;
+
 private:
-    Ui::titleBar *ui;
-    QString titleIco;   //标题栏图标
-    QString leftBtnIco;  //左箭头
-    QString rigthBtnIco;  //右箭头
-    QString addBtnIco;
-    int index;
-    QListWidgetItem *currentItem;//记录当前的项目
-    QPoint m_dragPosition;
     void initSignal();
     void initResource();
     void initContents();
-    QColor defaultColor;
-   // QListWidgetItem *getNewItem();
     QListWidgetItem *getNewItem();
 private slots:
+    void on_addNewBtn_clicked();
     void delTitleItem(QListWidgetItem *item);
     void clickedTitleItem(QListWidgetItem *item);
-    void setTitleText(QString &fileId);
     void delCurrentItem();
+    void updateTitle();
+private:
+    Ui::titleBar *ui;
+    QSharedPointer<QString>fileId;   //当前文件id
+    QString titleIco;   //标题栏图标
+    QString leftBtnIco;  //左箭头
+    QString rigthBtnIco;  //右箭头
+    QString addBtnIco;  //添加
+    int index;  //未保存的分配id
+    QListWidgetItem *currentItem;//记录当前的项目
+    QPoint m_dragPosition;
+    QColor defaultColor;
 };
 
 #endif // TITLEBAR_H
