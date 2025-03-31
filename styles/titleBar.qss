@@ -6,33 +6,31 @@
 
 
 QPushButton{
-        width:30px;
-        icon-size:16px;
-         padding: 0px;
-    margin: 0px;
-	  border: none;  
-    border-radius: 1px;
+     width:30px;
+     icon-size:16px;
+     padding: 0px;
+     margin: 0px;
+     border: none;  
 }
 
+
 QPushButton:hover{
- background-color: #E0E0E0; 
+    background-color: #CAD3DD; 
     outline: none;
+    border: none;
+     
 }
+
 
 QToolButton{
     icon-size:25px;
-    font-size:18px;
-    color: #555555;
     width:36px;
-    padding: 0px;  
-    margin: 0px; 
     border: none;
 }
 
 
 QToolButton:hover {
-    background-color: #E0E0E0; 
-    outline: none;
+    background-color: #CAD3DD; 
 }
 
 QToolButton#closeBtn {
@@ -48,14 +46,16 @@ QToolButton#maximizeBtn{
 }
 
 
-QListWidget QPushButton {
-    border: none;
-    outline: none;
-}
 
 
-QListWidget QPushButton:hover {
+QListWidget :hover {
     background-color: #CAD3DD;
 }
+
+QPushButton#closeBtn {
+     qproperty-icon:url(":/Icon/close.png");
+}
+
+
 
 
