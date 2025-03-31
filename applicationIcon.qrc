@@ -11,5 +11,9 @@
         <file>Icon/min.png</file>
         <file>Icon/add.png</file>
         <file>styles/topresizearea.qss</file>
+        <file>Icon/openfile.png</file>
+        <file>Icon/copy.png</file>
+        <file>Icon/patse.png</file>
+        <file>Icon/savefile.png</file>
     </qresource>
 </RCC>
