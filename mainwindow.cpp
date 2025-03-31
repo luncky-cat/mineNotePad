@@ -3,7 +3,14 @@
 #include "SignalRelay.h"
 #include "titlebar.h"
 #include "topresizearea.h"
+#include <QFileInfo>
+#include <QDir>
+#include <QDebug>
 
+
+
+
+//------    初始化相关函数实现    ------
 MainWindow::MainWindow(QWidget *parent): QMainWindow(parent), ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
@@ -26,11 +33,12 @@ MainWindow::~MainWindow()
 void MainWindow::initResource(){
 
     appIcon = ":/Icon/application.png";
-    currentEditor=nullptr;
-    defaultEditor=new QTextEdit();   //添加默认
-    newEditor=nullptr;
     defaultSize=14;
     currentSize=14;
+    currentEditor=nullptr;
+    defaultEditor=new QTextEdit();
+    defaultEditor->setFontPointSize(defaultSize);
+    fileId=SignalRelay::instance().getFileId();
     statusBarTimer=new QTimer(this);
     statusBarTimer->setInterval(100);
     statusBarTimer->setSingleShot(true);
@@ -41,22 +49,18 @@ void MainWindow::initTitleBar()
     setWindowFlags(Qt::FramelessWindowHint|Qt::Window); //隐藏
     resizeArea=new TopResizeArea(this);  //最顶上
     titleBar_=new titleBar(this); //自定义标题栏
-    fileId =titleBar_->fileId;   //初始化共享指针
 }
 
 void MainWindow::initCenter()
 {
-    ui->statusBarAct->setChecked(true);    // 默认勾选
+    ui->statusBarAct->setChecked(true);
 
-    delete ui->toolBar;
+    //delete ui.;
 
     QWidget *centralContainer = new QWidget(this);
 
     editorStack = new QStackedWidget(centralContainer);
-    editorStack->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding); // 让它填充整个界面
-    QFont defaultFont;
-    defaultFont.setPointSize(defaultSize);  // 设置默认大小
-    editorStack->setFont(defaultFont);
+    editorStack->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     editorStack->addWidget(defaultEditor);
 
     QVBoxLayout *layout = new QVBoxLayout(centralContainer);
@@ -66,11 +70,12 @@ void MainWindow::initCenter()
     layout->addWidget(resizeArea);
     layout->addWidget(titleBar_);
     layout->addWidget(ui->menubar);
-    layout->addWidget(editorStack);  // QStackedWidget 保持在 centralWidget 里
+    //layout->addWidget(ui->toolBar);
+    layout->addWidget(editorStack);
     centralContainer->setLayout(layout);
     setCentralWidget(centralContainer);
 
-    setWindowIcon(QIcon(appIcon));//设置运行图标
+    setWindowIcon(QIcon(appIcon));
 }
 
 void MainWindow::initStatusBar()
@@ -81,23 +86,22 @@ void MainWindow::initStatusBar()
     cursorPosLabel->setMinimumWidth(100);
     charCountLabel->setMinimumWidth(100);
     fontRateLabel->setMinimumWidth(100);
-    statusBar()->setStyleSheet("background-color: #F0F5F9;"); // 设置浅蓝色背景
     statusBar()->addWidget(cursorPosLabel);
     statusBar()->addWidget(charCountLabel);
     statusBar()->addWidget(fontRateLabel);
     statusBar()->setFixedHeight(30);
-    ui->menubar->setStyleSheet("background-color:#F0F5F9");
 }
-
 
 void MainWindow::initSignal(){
     connect(&SignalRelay::instance(),&SignalRelay::minimizeRequested,this,&QMainWindow::showMinimized);  //最小
     connect(&SignalRelay::instance(), &SignalRelay::maximizeRequested,this,&MainWindow::showMax);//最大/还原
     connect(&SignalRelay::instance(), &SignalRelay::closeRequested,this, &QMainWindow::close); //关闭
-    connect(&SignalRelay::instance(),&SignalRelay::switchEditorRequested,this,&MainWindow::switchEditor);  //切换
-    connect(&SignalRelay::instance(), &SignalRelay::closeEditorRequested, this, &::MainWindow::oncloseEditor);  //关闭
+
+    connect(&SignalRelay::instance(),&SignalRelay::switchEditorRequested,this,&MainWindow::switchEditor);  //切换编辑器
+    connect(&SignalRelay::instance(), &SignalRelay::closeEditorRequested, this, &::MainWindow::oncloseEditor);  //关闭当前编辑器
     connect(&SignalRelay::instance(),&SignalRelay::addNewEditorRequested,this,&MainWindow::addNewEditor);//新建编辑器
 
+    //文本操作
     connect(ui->cutAct, &QAction::triggered, this, &MainWindow::cutText);
     connect(ui->copyAct, &QAction::triggered, this, &MainWindow::copyText);
     connect(ui->patseAct, &QAction::triggered, this, &MainWindow::pasteText);
@@ -109,20 +113,10 @@ void MainWindow::initSignal(){
     connect(statusBarTimer, &QTimer::timeout, this, &MainWindow::performUpdateStatusBar);
     connect(defaultEditor, &QTextEdit::textChanged, this, &MainWindow::updateStatusBar);
     connect(defaultEditor, &QTextEdit::cursorPositionChanged,this, &MainWindow::updateStatusBar);
-
+    connect(&SignalRelay::instance(),&SignalRelay::performUpdateStatusBarRequested,this,&MainWindow::performUpdateStatusBar);
 }
 
-void MainWindow::switchEditor(){    //切换id对应编辑器
-    qDebug()<<"切换编辑器:"<<*fileId;
-    currentEditor=defaultEditor;  //默认
-    if(textEditMap.contains(*fileId)){
-        bool changed;
-        std::tie(currentEditor,changed) = textEditMap[*fileId];
-    }
-    editorStack->setCurrentWidget(currentEditor);
-}
-
-void MainWindow::initStyle()
+void MainWindow::initStyle()   //设置qss
 {
     QFile file(":/styles/style.qss"); // QSS文件路径
     if (file.open(QFile::ReadOnly)) {
@@ -132,41 +126,67 @@ void MainWindow::initStyle()
     }
 }
 
-void MainWindow::bindNewEditor()
-{
-    disconnect(defaultEditor,&QTextEdit::textChanged,this,&MainWindow::bindNewEditor);   //断开共享页连接
-    currentEditor=new QTextEdit(editorStack);
-    currentEditor->setText(defaultEditor->toPlainText());  //复制文本
-    editorStack->addWidget(currentEditor);
-    editorStack->setCurrentWidget(currentEditor);
-    textEditMap.insert(*fileId,qMakePair(currentEditor,true));
-    connect(statusBarTimer, &QTimer::timeout, this, &MainWindow::performUpdateStatusBar);
-    connect(currentEditor, &QTextEdit::textChanged, this, &MainWindow::updateStatusBar);
-    connect(currentEditor, &QTextEdit::cursorPositionChanged,this, &MainWindow::updateStatusBar);
-    defaultEditor->clear();
-    connect(defaultEditor,&QTextEdit::textChanged,this,&MainWindow::bindNewEditor);   //重新绑定
-    qDebug()<<"绑定新编辑器:"<<*fileId<<"对应地址:"<<currentEditor;
+bool MainWindow::canCreateFile(const QString &filePath) {   //判断是否写
+
+    QFile file(filePath);
+    if (file.exists()) {
+        return true; // 已存在则认为可写
+    }
+
+    if (file.open(QIODevice::WriteOnly)) {
+        file.close();
+        file.remove();
+        return true;
+    } else {
+        return false;
+    }
 }
 
+
+
+
+//------    编辑器相关槽函数实现    ------
 void MainWindow::showMax(){
     this->isMaximized()?this->showNormal(): this->showMaximized();
 }
 
-bool MainWindow::addNewEditor()
+void MainWindow::bindNewEditor()
 {
-    qDebug()<<"新建编辑器:"<<*fileId;
+    disconnect(defaultEditor,&QTextEdit::textChanged,this,&MainWindow::bindNewEditor);   //断开共享页连接
+    currentEditor=new QTextEdit();
+    currentEditor->setText(defaultEditor->toPlainText());  //复制文本
+    editorStack->addWidget(currentEditor);
+    editorStack->setCurrentWidget(currentEditor);
+    textEditMap.insert(*fileId,qMakePair(currentEditor,true));  //设置修改位
+    defaultEditor->clear();
+    connect(statusBarTimer, &QTimer::timeout, this, &MainWindow::performUpdateStatusBar);
+    connect(currentEditor, &QTextEdit::textChanged, this, &MainWindow::updateStatusBar);
+    connect(currentEditor, &QTextEdit::cursorPositionChanged,this, &MainWindow::updateStatusBar);
+
+    connect(defaultEditor,&QTextEdit::textChanged,this,&MainWindow::bindNewEditor);   //重新绑定
+}
+
+void MainWindow::switchEditor(){    //切换当前id对应编辑器
+    currentEditor=defaultEditor;  //默认
+    if(textEditMap.contains(*fileId)){
+        bool changed;
+        std::tie(currentEditor,changed) = textEditMap[*fileId];
+    }
+    editorStack->setCurrentWidget(currentEditor);
+}
+
+bool MainWindow::addNewEditor()   //判断当前的文件id是否需要新建编辑器
+{
     currentEditor=defaultEditor;
     bool ok;
-    if(fileId->toInt(&ok)){    //空的为新建按钮点击
+
+    if(fileId->toInt(&ok)){    //不存在路径，设置默认
         editorStack->setCurrentWidget(currentEditor);
-         qDebug()<<"空的为新建按钮";
         return true;
     }
 
     if(textEditMap.contains(*fileId)){   //已经打开
         switchEditor();
-        qDebug()<<"已经存在，切换";
-        //更新title  点击
         return false;
     }
 
@@ -186,7 +206,7 @@ bool MainWindow::addNewEditor()
     connect(statusBarTimer, &QTimer::timeout, this, &MainWindow::performUpdateStatusBar);
     connect(currentEditor, &QTextEdit::textChanged, this, &MainWindow::updateStatusBar);
     connect(currentEditor, &QTextEdit::cursorPositionChanged,this, &MainWindow::updateStatusBar);
-    connect(currentEditor, &QTextEdit::textChanged, this, [=]() {textEditMap[*fileId].second = true;});
+    connect(currentEditor, &QTextEdit::textChanged, this, [=]() {textEditMap[*fileId].second = true;});  //修改
 
     editorStack->addWidget(currentEditor);
     editorStack->setCurrentWidget(currentEditor); //显示当前对应
@@ -195,52 +215,53 @@ bool MainWindow::addNewEditor()
     return true;
 }
 
-
-
-void MainWindow::updateStatusBar() {
-    statusBarTimer->start();
+void MainWindow::oncloseEditor(){    //关闭当前编辑器
+    if(textEditMap.contains(*fileId)){    //存在
+        if(textEditMap.value(*fileId).second){   //改变了
+            QMessageBox::StandardButton reply;
+            reply = QMessageBox::question(this, "保存确认","该文件尚未保存，是否保存？",QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
+            if (reply == QMessageBox::Yes) {
+                on_saveAct_triggered();//保持
+            }else if(reply == QMessageBox::Cancel){    //取消
+                return;
+            }
+        }
+        editorStack->removeWidget(textEditMap.value(*fileId).first);   //移出容器
+        textEditMap.remove(*fileId);  //移除组合
+    }
 }
 
-void MainWindow::performUpdateStatusBar() {
-    updateCursorStatus();
-    updateTextStats();
-}
-
-void MainWindow::updateCursorStatus() {
-    QTextCursor cursor = currentEditor->textCursor();
-    int line = cursor.blockNumber() + 1;      // 行号（从0开始，加1）
-    int column = cursor.positionInBlock();  // 列号（从0开始，加1）
-    cursorPosLabel->setText(QString("行: %1, 列: %2").arg(line).arg(column));
-}
-
-void MainWindow::updateTextStats() {
-    int charCount = currentEditor->toPlainText().length(); // 文本长度
-    charCountLabel->setText(QString("字符数: %1").arg(charCount));
-    int scale = qRound((currentSize / (double)defaultSize) * 100);
-    fontRateLabel->setText(QString("%1%").arg(scale));
+void MainWindow::updateAllTextAndFutureFontSize() {
+    QFont font = currentEditor->font();
+    if(currentSize!=font.pointSize()){
+        font.setPointSize(currentSize);
+        currentEditor->setFont(font);
+    }
 }
 
 
-void MainWindow::on_newWAct_triggered()
+
+
+//------    action相关槽函数实现    ------
+void MainWindow::on_newWAct_triggered()   //新窗口
 {
     QString program = QCoreApplication::applicationFilePath();  // 获取当前程序的可执行路径
     QProcess::startDetached(program);  // 以新进程启动
 }
 
-
 void MainWindow::on_newAct_triggered()  //新建选项卡
 {
     fileId->clear();
     SignalRelay::instance().requestAddTab();
+    switchEditor();    //切换到当前
 }
 
 void MainWindow::on_openAct_triggered()   //打开文件
 {
     QFileDialog Dialog(nullptr,tr("选择文件"),"","文本文档(*.txt);;所有文件(*.)");
-    if(Dialog.exec()==QFileDialog::Accepted){   //选中文件并打开
+    if(Dialog.exec()==QFileDialog::Accepted){   //选中文件打开
         QString filePath = Dialog.selectedFiles().constFirst();
-        QFileInfo fileInfo(filePath);  // 只创建一次 QFileInfo，提高效率
-        if (fileInfo.exists() && fileInfo.isFile()) {
+        if (canCreateFile(filePath)) {
             *fileId = filePath;
         }
         else{
@@ -253,62 +274,181 @@ void MainWindow::on_openAct_triggered()   //打开文件
     }
 }
 
-
-void MainWindow::on_saveAct_triggered()
-{
-    bool ok;
-    if(fileId->toInt(&ok)){  //保存文件路径不存在
-        QString filePath = QFileDialog::getSaveFileName(
-            nullptr, "保存文件", "新建文档.txt", "文本文档(*.txt);;所有文件(*.)"
-            );
-
-        QFileInfo fileInfo(filePath);  // 只创建一次 QFileInfo，提高效率
-        if (fileInfo.exists() && fileInfo.isFile()) {
-            qDebug()<<"filepath:"<<filePath;
-            textEditMap.remove(*fileId);//删除旧组合
-            *fileId=filePath;
-            textEditMap.insert(*fileId,qMakePair(currentEditor,false));   //新组合
-
-            SignalRelay::instance().requestSetTitleText(filePath);  //更新title
-        }else{
-            return;
-        }
-    }
-
+void MainWindow::saveFile(){  //保存
     QSaveFile file(*fileId);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
         QMessageBox::critical(this, "文件打开失败", "无法打开文件：" + file.errorString());
         return;
     }
 
-    //写入数据
-    qDebug()<<"写入到:"<<*fileId;
     QTextStream out(&file);
     out<<currentEditor->toPlainText();
     if (!file.commit()) {
         QMessageBox::critical(this, "文件保存失败", "无法保存文件：" + file.errorString());
+        return;
     }
 }
 
+void MainWindow::on_saveAct_triggered()
+{
+    bool ok;
+    if(fileId->toInt(&ok)){  //保存文件路径不存在
 
-void MainWindow::oncloseEditor(){
-    if(textEditMap.contains(*fileId)){    //存在
-        qDebug()<<"关闭对应已经编辑的编辑器:"<<*fileId;
-        if(textEditMap.value(*fileId).second){   //改变了
-            QMessageBox::StandardButton reply;
-            reply = QMessageBox::question(this, "保存确认","该文件尚未保存，是否保存？",QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
-            if (reply == QMessageBox::Yes) {
-                switchEditor();  //切换编辑器
-                on_saveAct_triggered();//保持
-            }else if(reply == QMessageBox::Cancel){    //取消
-                return;
-            }
+        QString filePath = QFileDialog::getSaveFileName(nullptr, "保存文件", "新建文档.txt", "文本文档(*.txt);;所有文件(*.)");
+        QFileInfo fileInfo(filePath);
+        if (canCreateFile(filePath)) {
+            textEditMap.remove(*fileId);//删除旧组合
+            *fileId=filePath;
+            textEditMap.insert(*fileId,qMakePair(currentEditor,false));   //新组合
+            SignalRelay::instance().updateTitleRequested();  //更新title
+        }else{
+            return;
         }
-        editorStack->removeWidget(textEditMap.value(*fileId).first);   //移出容器
-        textEditMap.remove(*fileId);  //移除组合
+    }
+
+    saveFile();
+
+    textEditMap[*fileId].second=false;   //保存后设置更新修改位
+}
+
+void MainWindow::on_closeAct_triggered(){    //关闭当前
+    SignalRelay::instance().requestDelCurrentItem();
+}
+
+void MainWindow::on_saveSAct_triggered()   //另存
+{
+    textEditMap.remove(*fileId);   //移除现在的组合
+    QString filePath = QFileDialog::getSaveFileName(nullptr, "保存文件", "新建文档.txt", "文本文档(*.txt);;所有文件(*.)");
+
+    if(!canCreateFile(filePath)){
+        return;
+    }
+
+    QSaveFile file(filePath);
+    if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+
+        *fileId=filePath;
+        textEditMap.insert(*fileId,qMakePair(currentEditor,false));
+
+        QTextStream out(&file);
+        out<<currentEditor->toPlainText();
+
+        if (!file.commit()) {
+            QMessageBox::critical(this, "文件保存失败", "无法保存文件：" + file.errorString());
+            return;
+        }
+
+        SignalRelay::instance().requestUpdateTitle();
+    }
+
+}
+
+void MainWindow::on_priAct_triggered()    //打印
+{
+    QPrinter printer;
+    QPrintDialog dialog(&printer,currentEditor);
+    if (dialog.exec() == QDialog::Accepted) {
+        currentEditor->print(&printer);
     }
 }
 
+void MainWindow::on_dateAct_triggered()    //获得当前时间
+{
+    QDateTime time = QDateTime::currentDateTime();  // 获取当前时间
+    currentEditor->insertPlainText(time.toString("yyyy-MM-dd HH:mm"));
+}
+
+void MainWindow::on_statusBarAct_triggered(bool checked)  // 显示或隐藏状态栏
+{
+    statusBar()->setVisible(checked);
+}
+
+
+
+
+//------    状态栏相关槽函数实现    ------
+void MainWindow::updateStatusBar() {   //定时器
+    statusBarTimer->start();
+}
+
+void MainWindow::performUpdateStatusBar() {
+    updateCursorStatus();
+    updateTextStats();
+    updateFontRateLabel();
+    updateAllTextAndFutureFontSize();   //更新新窗口的字体大小
+}
+
+void MainWindow::updateCursorStatus() {
+    QTextCursor cursor = currentEditor->textCursor();
+    int line = cursor.blockNumber() + 1;      // 行号（从0开始，加1）
+    int column = cursor.positionInBlock()+1;  // 列号（从0开始，加1）
+    cursorPosLabel->setText(QString("行: %1, 列: %2").arg(line).arg(column));
+}
+
+void MainWindow::updateTextStats() {
+    int charCount = currentEditor->toPlainText().length(); // 文本长度
+    charCountLabel->setText(QString("字符数: %1").arg(charCount));
+    int scale = qRound((currentSize / (double)defaultSize) * 100);
+    fontRateLabel->setText(QString("%1%").arg(scale));
+}
+
+
+void MainWindow::on_enlargeAct_triggered()
+{
+    QFont font = currentEditor->font();
+    currentSize = font.pointSize();
+    font.setPointSize(currentSize + 1);  // 增加1个单位
+    currentEditor->setFont(font);
+    updateFontRateLabel();  // 更新放缩率
+}
+
+
+void MainWindow::on_reduceAct_triggered()
+{
+    QFont font = currentEditor->font();
+    currentSize = font.pointSize();
+    font.setPointSize(currentSize -1);  // 增加1个单位
+    currentEditor->setFont(font);
+    updateFontRateLabel();  // 更新放缩率
+}
+
+void MainWindow::updateFontRateLabel() {
+    int scale = qRound((currentSize / (double)defaultSize) * 100);
+    fontRateLabel->setText(QString("%1%").arg(scale));
+}
+
+
+void MainWindow::wheelEvent(QWheelEvent *event)
+{
+    if (QApplication::keyboardModifiers() & Qt::ControlModifier) {
+        int delta = event->angleDelta().y();
+        if (delta > 0) {
+            changeFontSize(true);
+        } else {
+            changeFontSize(false);
+        }
+    } else {
+        QMainWindow::wheelEvent(event);
+    }
+}
+
+void MainWindow::changeFontSize(bool increase)
+{
+    if(increase){
+        on_enlargeAct_triggered();
+    }else{
+        on_reduceAct_triggered();
+    }
+    updateFontRateLabel();  // 更新放缩率
+}
+
+
+
+
+
+
+
+//------    文本操作相关槽函数实现    ------
 void MainWindow::cutText()
 {
     currentEditor->cut();
@@ -318,7 +458,7 @@ void MainWindow::copyText()
 {
 
     QTextCursor cursor = currentEditor->textCursor();
-    if (cursor.hasSelection()) {  // 只有选中了文本才执行复制
+    if (cursor.hasSelection()) {  // 选中了文本执行复制
         currentEditor->copy();
     }
 }
@@ -343,114 +483,11 @@ void MainWindow::undoText()
     currentEditor->undo();
 }
 
-void MainWindow::on_closeAct_triggered(){
-    SignalRelay::instance().requestDelCurrentItem();
-}
-
-void MainWindow::on_saveSAct_triggered()   //优化
-{
-    QString filePath = QFileDialog::getSaveFileName(
-        nullptr, "保存文件", "新建文档.txt", "文本文档(*.txt);;所有文件(*.)"
-        );
-
-    if (filePath.isEmpty()) {
-        return;
-    }
-
-    QSaveFile file(filePath);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QMessageBox::critical(this, "文件打开失败", "无法打开文件：" + file.errorString());
-        return;
-    }
-
-    //写入数据
-    QTextStream out(&file);
-    out<<currentEditor->toPlainText();
-    if (!file.commit()) {
-        QMessageBox::critical(this, "文件保存失败", "无法保存文件：" + file.errorString());
-    }
-    SignalRelay::instance().requestSetTitleText(filePath);
-}
 
 
-void MainWindow::on_priAct_triggered()
-{
-    QPrinter printer;
-    QPrintDialog dialog(&printer,currentEditor);
-    if (dialog.exec() == QDialog::Accepted) {
-        currentEditor->print(&printer);
-    }
-}
 
-void MainWindow::on_dateAct_triggered()
-{
-    QDateTime time = QDateTime::currentDateTime();  // 获取当前时间
-    currentEditor->insertPlainText(time.toString("yyyy-MM-dd HH:mm"));
-}
-
-// void MainWindow::on_enlargeAct_triggered()
-// {
-//     QFont font = currentEditor->font();
-//     currentSize = font.pointSize();
-//     font.setPointSize(currentSize + 1);  // 增加1个单位
-//     currentEditor->setFont(font);
-//     updateFontRateLabel();  // 更新放缩率
-// }
-
-
-// void MainWindow::on_reduceAct_triggered()
-// {
-//     QFont font = currentEditor->font();
-//     currentSize = font.pointSize();
-//     font.setPointSize(currentSize -1);  // 增加1个单位
-//     currentEditor->setFont(font);
-//     updateFontRateLabel();  // 更新放缩率
-// }
-
-// void MainWindow::updateFontRateLabel() {
-//     int scale = qRound((currentSize / (double)defaultSize) * 100);
-//     fontRateLabel->setText(QString("%1%").arg(scale));
-// }
-
-
-// void MainWindow::wheelEvent(QWheelEvent *event)
-// {
-//     // 判断是否按下 Ctrl 键
-//     if (QApplication::keyboardModifiers() & Qt::ControlModifier) {
-//         // 获取鼠标滚轮的旋转角度
-//         int delta = event->angleDelta().y();
-//         // 判断是滚轮向上还是向下
-//         if (delta > 0) {
-//             // 缩放字体变大
-//             changeFontSize(true);
-//         } else {
-//             // 缩放字体变小
-//             changeFontSize(false);
-//         }
-//     } else {
-//         // 如果没有按下 Ctrl 键，正常处理滚轮事件
-//         QMainWindow::wheelEvent(event);
-//     }
-// }
-
-// void MainWindow::changeFontSize(bool increase)
-// {
-//     // 获取当前字体
-//     QFont font = currentEditor->font();
-//     currentSize = font.pointSize();
-//     // 增加或减少字体大小
-//     font.setPointSize(currentSize + (increase ? 1 : -1));
-//     // 设置新的字体
-//     currentEditor->setFont(font);
-//     updateFontRateLabel();  // 更新放缩率
-// }
-
-void MainWindow::on_statusBarAct_triggered(bool checked)
-{
-    statusBar()->setVisible(checked);  // 显示或隐藏状态栏
-}
-
-MainWindow::ResizeRegion MainWindow::detectResizeRegion(const QPoint &pos)
+//------    放缩窗口相关槽函数实现    ------
+MainWindow::ResizeRegion MainWindow::detectResizeRegion(const QPoint &pos)   //检测
 {
     ResizeRegion region = None;
     QRect rect = this->rect();
@@ -540,7 +577,6 @@ void MainWindow::mouseMoveEvent(QMouseEvent *event)
         return;
     }
     else {
-        // 非调整大小状态，根据鼠标位置改变光标形状
         ResizeRegion region = detectResizeRegion(event->pos());
         Qt::CursorShape cursorShape = Qt::ArrowCursor;
 
