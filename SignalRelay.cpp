@@ -1,5 +1,11 @@
 #include "SignalRelay.h"
 
+SignalRelay::SignalRelay(QObject *parent)
+    : QObject(parent){
+    fileId=QSharedPointer<QString>::create("");
+    fileId->clear();
+}
+
 SignalRelay& SignalRelay::instance()
 {
     static SignalRelay instance;
@@ -22,20 +28,9 @@ void SignalRelay::requestedCloseEditor()
     emit closeEditorRequested();
 }
 
-SignalRelay::SignalRelay(QObject *parent)
-    : QObject(parent)
-{
-
-}
-
 void SignalRelay::requestAddTab()
 {
     emit addTabRequested();
-}
-
-void SignalRelay::requestRemoveTab(int index)
-{
-    emit removeTabRequested(index);
 }
 
 void SignalRelay::requestMinimize() {
@@ -48,10 +43,11 @@ void SignalRelay::requestClose()    {
     emit closeRequested();
 }
 
-void SignalRelay::requestSetTitleText(QString &fileId)
+void SignalRelay::requestUpdateTitle()
 {
-    emit setTitleTextRequested(fileId);
+    emit updateTitleRequested();
 }
+
 
 void SignalRelay::requestDelCurrentItem()
 {
@@ -61,5 +57,15 @@ void SignalRelay::requestDelCurrentItem()
 void SignalRelay::requestedTopResize(const QPoint &globalPos)
 {
     emit topResizeRequested(globalPos);
+}
+
+void SignalRelay::requestPerformUpdateStatusBar()
+{
+    emit performUpdateStatusBarRequested();
+}
+
+QSharedPointer<QString> SignalRelay::getFileId()
+{
+    return this->fileId;
 }
 
