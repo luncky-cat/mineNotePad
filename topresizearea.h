@@ -20,7 +20,6 @@ private:
 signals:
 protected:
     void paintEvent(QPaintEvent *event) override {
-        // 不做任何绘制，确保背景透明
         Q_UNUSED(event);
     }
 };
